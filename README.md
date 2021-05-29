@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/GolubDobra/lab06.svg?branch=master)](https://travis-ci.org/GolubDobra/lab06)
+[![Build Status](https://travis-ci.com/Sudar-Kudr/lab08.svg?branch=main)](https://travis-ci.com/Sudar-Kudr/lab08)
 
 ## Laboratory work VIII
 
