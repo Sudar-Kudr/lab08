@@ -1,115 +1,206 @@
 [![Build Status](https://travis-ci.org/GolubDobra/lab06.svg?branch=master)](https://travis-ci.org/GolubDobra/lab06)
 
-## Laboratory work VII
+## Laboratory work VIII
 
-Данная лабораторная работа посвещена изучению систем документирования исходного кода на примере **Doxygen**
+Данная лабораторная работа посвещена изучению систем автоматизации развёртывания и управления приложениями на примере **Docker**
 
-```ShellSession
-$ open https://www.stack.nl/~dimitri/doxygen/manual/index.html
+```sh
+$ open https://docs.docker.com/get-started/
 ```
 
 ## Tasks
 
-- [x] 1. Создать публичный репозиторий с названием **lab08** на сервисе **GitHub**
-- [X] 2. Выполнить инструкцию учебного материала
-- [X] 3. Ознакомиться со ссылками учебного материала
-- [X] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
+- [ok] 1. Создать публичный репозиторий с названием **lab08** на сервисе **GitHub**
+- [ok] 2. Ознакомиться со ссылками учебного материала
+- [ok] 3. Выполнить инструкцию учебного материала
+- [ok] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
 ## Tutorial
-Устанавливание значение для сервиса **GitHub** и выбираем редактор  
-```ShellSession
-$ export GITHUB_USERNAME=<имя_пользователя> #Устанавливаем значение переменной окружения GITHUB_USERNAME
-$ alias edit=subl # Выбираем текстовый редактор 
+
+```sh
+$ export GITHUB_USERNAME=<имя_пользователя>     #присваиваем имя пользователя GitHub в переменную GITHUB_USERNAME
 ```
-Инициализация директории **lab08**
-```ShellSession
-$ git clone https://github.com/${GITHUB_USERNAME}/lab06 lab08
-Клонирование в «lab08»…
-$ cd lab06 # Переходим в каталог lab08
-$ git remote remove origin #Удалить старый репозиторий
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab08 # Добавляем новый удаленный репозиторий
+
 ```
-Работа с системой документирования **Doxygen**
-```ShellSession
-$ mkdir docs #Создаем каталог docs
-$ doxygen -g docs/doxygen.conf #Создаем файл doxygen.conf
-$ cat docs/doxygen.conf #Редактирование файла doxygen.conf
+cd ${GITHUB_USERNAME}/workspace    #спускаемся в workspace
+pushd .                           #добавляем в стек текущий каталог
+source scripts/activate          #выполняем скрипт
+
 ```
-Работаем с конфигурационным файлом doxygen.conf
-```ShellSession
-#Изменение файла doxygen.conf
-$ sed -i '' 's/\(PROJECT_NAME.*=\).*$/\1 print/g' docs/doxygen.conf
-$ sed -i '' 's/\(EXAMPLE_PATH.*=\).*$/\1 examples/g' docs/doxygen.conf
-$ sed -i '' 's/\(INCLUDE_PATH.*=\).*$/\1 examples/g' docs/doxygen.conf
-$ sed -i '' 's/\(INPUT *=\).*$/\1 README.md include/g' docs/doxygen.conf
-$ sed -i '' 's/\(USE_MDFILE_AS_MAINPAGE.*=\).*$/\1 README.md/g' docs/doxygen.conf
-$ sed -i '' 's/\(OUTPUT_DIRECTORY.*=\).*$/\1 docs/g' docs/doxygen.conf
+
+```sh
+$ git clone https://github.com/${GITHUB_USERNAME}/lab07 lab08             #клонируем репозиторий из lab07 в директорию lab08
+$ cd lab08                                                               #переходим директорию lab08
+$ git submodule update --init                                           #
+$ git remote remove origin                                             #удаляем старую ссылку репозитория
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab08   #добавляем ссылку репозитория в управление репозиториями
 ```
-Изменение файла README.md
-```ShellSession
-$ sed -i '' 's/lab06/lab08/g' README.md
+
+```sh
+$ cat > Dockerfile <<EOF         #создаем файл Dockerfile и пишем операционную систему, где будем работать
+FROM ubuntu:18.04
+EOF
 ```
-Документирование и редактирование print.hpp
-```ShellSession
-# документируем функции print
-$ edit include/print.hpp
+
+```sh
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды (обновляем и устанавливаем пакеты)
+
+RUN apt update
+RUN apt install -yy gcc g++ cmake
+EOF
 ```
-Отправляем последние изменения на **GitHub** сервер
-```ShellSession
-$ git add . # Отследить изменения всех файлов
-$ git commit -m"added doxygen.conf" # Сохранить изменения с комментарием
-$ git push origin master # Загрузка файлов на сервер
+
+```sh
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды который копирует то что есть в print/ и спускаемся в print
+
+COPY . print/
+WORKDIR print
+EOF
 ```
-Работаем с сервисом **Travis**
-```ShellSession
-$ travis login --auto # Авторизация через GitHub
-$ travis enable # Включение проекта
+
+```sh
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды для тестирования сборки и инсталляции проекта
+
+RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
+RUN cmake --build _build
+RUN cmake --build _build --target install
+EOF
 ```
-Работа с файлом документации и отправление последни изменений на **GitHub** сервер
-```ShellSession
-$ doxygen docs/doxygen.conf # Создание конфигурационного файла документации
-$ ls | grep "[^docs]" | xargs rm -rf
-$ mv docs/html/* . && rm -rf docs # Перемещение и удаление файлов кроме файла docs
-$ git checkout -b gh-pages #Перемещаемся на ветку gh-pages,где хранится документация html
-#Добавляем все отредактированные файлы в подтвержденные
-$ git add . # Отследить изменения всех файлов
-$ git commit -m"added documentation" # Сохранить изменения с комментарием
-$ git push origin gh-pages
-$ git checkout master  #Перемещаемся на ветку master
+
+```sh 
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды установки значения переменной LOG_PATH
+
+ENV LOG_PATH /home/logs/log.txt
+EOF
 ```
-Делаем Screenshot терминала и загружаем на сервис **Google Drive**
-```ShellSession
-$ mkdir artifacts && cd artifacts #Создаем каталог artifacts и перемещаемся в него
-$ screencapture -T 10 screenshot.jpg #Делаем снимок экрана и помещаем его в каталог artifacts
-<Command>-T
-$ open https://${GITHUB_USERNAME}.github.io/lab08/print_8hpp_source.html #Открываем ссылку
-$ gdrive upload screenshot.jpg #Загружаем скриншот
-$ SCREENSHOT_ID=`gdrive list | grep screenshot | awk '{ print $1; }'` # Задаем значения переменной SCREENSHOT_ID
-$ gdrive share ${SCREENSHOT_ID} --role reader --type user --email rusdevops@gmail.com # Даем права на просмотр для пользователя rusdevops@gmail.com
-$ echo https://drive.google.com/open?id=${SCREENSHOT_ID} #Выводим ссылку на наше изображение
-https://drive.google.com/file/d/0Bw35q7PD8b3lNkFPb1IwRWtvdlU/view
+
+```sh
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды указываем в какой директории будут храниться файлы после работы
+
+VOLUME /home/logs
+EOF
+```
+
+```sh
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды спуска в _install/bin
+
+WORKDIR _install/bin
+EOF
+```
+
+```sh
+$ cat >> Dockerfile <<EOF         #дозапысиваем команды вызова утилиты demo
+
+ENTRYPOINT ./demo
+EOF
+```
+
+```sh
+$ docker build -t logger .              #cборка образа
+[+] Building 38.5s (15/15) FINISHED                                 
+=> [internal] load build definition from Dockerfile           0.0s
+=> => transferring dockerfile: 384B                           0.0s
+=> [internal] load .dockerignore                              0.0s
+=> => transferring context: 2B                                0.0s
+=> [internal] load metadata for docker.io/library/ubuntu:18.  3.7s
+=> [auth] library/ubuntu:pull token for registry-1.docker.io  0.0s
+=> [internal] load build context                              0.1s
+=> => transferring context: 1.14MB                            0.1s
+=> [1/9] FROM docker.io/library/ubuntu:18.04@sha256:04919776  5.8s
+=> => resolve docker.io/library/ubuntu:18.04@sha256:04919776  0.0s
+=> => sha256:04919776d30640ce4ed24442d5f7c1a 1.41kB / 1.41kB  0.0s
+=> => sha256:ceed028aae0eac7db9dd33bd89c14d5a999 943B / 943B  0.0s
+=> => sha256:81bcf752ac3dc8a12d54908ecdfe98a 3.32kB / 3.32kB  0.0s
+=> => sha256:4bbfd2c87b7524455f144a03bf387 26.70MB / 26.70MB  4.2s
+=> => sha256:d2e110be24e168b42c1a2ddbc4a476a217b 857B / 857B  0.2s
+=> => sha256:889a7173dcfeb409f9d88054a97ab2445f5 189B / 189B  0.5s
+=> => extracting sha256:4bbfd2c87b7524455f144a03bf387c88b6d4  1.0s
+=> => extracting sha256:d2e110be24e168b42c1a2ddbc4a476a217b7  0.0s
+=> => extracting sha256:889a7173dcfeb409f9d88054a97ab2445f5a  0.0s
+=> [2/9] RUN apt update                                       6.3s
+=> [3/9] RUN apt install -yy gcc g++ cmake                   19.2s 
+=> [4/9] COPY . print/                                        0.0s 
+=> [5/9] WORKDIR print                                        0.0s
+=> [6/9] RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -  1.2s
+=> [7/9] RUN cmake --build _build                             0.5s
+=> [8/9] RUN cmake --build _build --target install            0.3s
+=> [9/9] WORKDIR _install/bin                                 0.0s
+=> exporting to image                                         1.3s
+=> => exporting layers                                        1.3s
+=> => writing image sha256:3c1db7cfd2d60730865473d29db01d55a  0.0s
+=> => naming to docker.io/library/logger                      0.0s
+```
+
+```sh
+$ docker images         #выводим информацию о существующих образах
+REPOSITORY                    TAG       IMAGE ID       CREATED          SIZE
+logger                        latest    3c1db7cfd2d6   40 seconds ago   326MB
+workspace/ubuntu-nodejs       latest    448b5297d2fc   2 weeks ago
+..............................................................................
+```
+
+```sh
+$ mkdir logs                                          #cоздаем директорию logs
+$ docker run -it -v "$(pwd)/logs/:/home/logs/" logger  #cоздаем интерактивный процесс logger и передаем текст
+text1
+text2
+text3
+<C-D>
+```
+
+```sh
+$ docker inspect logger             #вывод подробной информации о контейнере
+```
+
+```sh
+$ cat logs/log.txt                 #вывод информации о вывода утилиты в лог
+```
+
+```sh
+$ sed -i -e 's/lab07/lab08/g' README.md         #заменяем README.md
+```
+
+```sh
+$ vim .travis.yml        #измененим .travis.yml для сборки в контейнере
+/lang<CR>o
+services:
+- docker<ESC>
+jVGdo
+script:
+- docker build -t logger .<ESC>
+:wq
+```
+
+```sh
+$ git add Dockerfile                  #добавляем Dockerfile
+$ git add .travis.yml                #добавляем .travis.yml
+$ git commit -m"adding Dockerfile"  #закомментируем их
+$ git push origin main             #отправляем данные на сервер, в удаленный репозиторий main
+```
+
+```sh
+$ travis login --auto         #авторизируемся на travis
+$ travis enable             #делаем проект доступным
 ```
 
 ## Report
 
-```ShellSession
-$ cd ~/workspace/labs/
-$ export LAB_NUMBER=07
-$ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
-$ mkdir reports/lab${LAB_NUMBER}
-$ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
-$ cd reports/lab${LAB_NUMBER}
-$ edit REPORT.md
-$ gistup -m "lab${LAB_NUMBER}"
+```sh
+$ popd                                                                           #удаляем из стека текущий каталог
+$ export LAB_NUMBER=08                                                          #присваиваем 08 в переменную LAB_NUMBER
+$ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER} #клонируем из ссылки в директорию (в нашем случае-tasks/lab08)
+$ mkdir reports/lab${LAB_NUMBER}                                              #создаем в директории reports папку (в нашем случае- lab08) 
+$ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md     #копируем из одной директории в другую
+$ cd reports/lab${LAB_NUMBER}                                               #спускаемся в директорию (в наше случае- lab08)
+$ edit REPORT.md                                                           #редактируем REPORT.md
+$ gist REPORT.md                                                          #сохраняем REPORT.md
 ```
 
 ## Links
 
-- [HTML](https://ru.wikipedia.org/wiki/HTML)
-- [LAΤΕΧ](https://ru.wikipedia.org/wiki/LaTeX)
-- [man](https://ru.wikipedia.org/wiki/Man_(%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%B0_Unix))
-- [CHM](https://ru.wikipedia.org/wiki/HTMLHelp)
-- [PostScript](https://ru.wikipedia.org/wiki/PostScript)
+- [Book](https://www.dockerbook.com)
+- [Instructions](https://docs.docker.com/engine/reference/builder/)
 
 ```
-Copyright (c) 2017 Братья Вершинины
+Copyright (c) 2015-2021 The ISC Authors
+```
